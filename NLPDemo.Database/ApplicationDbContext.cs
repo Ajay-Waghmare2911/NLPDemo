@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,5 +16,7 @@ namespace NLPDemo.Database
             // Database seeding or configuration can be done here
 
         }
+        public DbSet<tblProperty> tblproperty { get; set; }
+        public DbSet<tblVillageInfo> tblvillageinfo { get; set; }
     }
 }

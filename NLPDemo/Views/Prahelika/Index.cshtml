@@ -1,0 +1,166 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "Karnataka Village Land & Population Portal";
+}
+
+<div class="container mt-5 pb-5">
+    <div class="text-center mb-4">
+        <h1 class="display-5 fw-bold text-primary">Village Search Portal</h1>
+        <p class="lead text-muted">
+            Just type anything — English, Hindi, Hinglish. It understands everything!
+        </p>
+        <small class="text-success">
+            Try: garden land under 5 acres • residential in mudhol • syed 22 • government land • population yallatti
+        </small>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="input-group input-group-lg shadow">
+                <input type="text" id="searchBox" class="form-control border-0"
+                       placeholder="e.g. garden land in mudhol under 5 acre, residential plot, 22, etc."
+                       autocomplete="off"
+                       onkeypress="if(event.key==='Enter') searchNow()">
+                <button class="btn btn-primary" onclick="searchNow()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center my-5" style="display:none;">
+        <div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div>
+        <p class="mt-3 text-muted">Thinking like a human...</p>
+    </div>
+
+    <div id="results" class="mt-5"></div>
+</div>
+
+<style>
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.4rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 6px solid #0066cc;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        }
+
+        .card b {
+            color: #2c3e50;
+        }
+
+    .input-group {
+        border-radius: 50px;
+        overflow: hidden;
+    }
+
+    .btn-primary {
+        background: #0066cc;
+        border: none;
+        border-radius: 0 50px 50px 0 !important;
+        padding: 0 2.2rem;
+    }
+
+        .btn-primary:hover {
+            background: #0052a3;
+        }
+
+    #searchBox {
+        border-radius: 50px 0 0 50px !important;
+        padding-left: 1.8rem;
+    }
+
+    .answer-box {
+        background: #e8f4fc;
+        border-left: 5px solid #0066cc;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+</style>
+
+<script>
+    async function searchNow() {
+        const query = document.getElementById('searchBox').value.trim();
+        if (!query) return alert("Please type something!");
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').innerHTML = '';
+
+        try {
+            const res = await fetch(`/Prahelika/Search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            document.getElementById('loading').style.display = 'none';
+            const div = document.getElementById('results');
+
+            if (data.error) {
+                div.innerHTML = `<div class="alert alert-warning text-center"><h4>${data.error}</h4></div>`;
+                return;
+            }
+
+            // Show AI Answer First (Grok-style response)
+            if (data.answer) {
+                div.innerHTML += `
+                    <div class="answer-box">
+                        <strong>Answer:</strong> ${data.answer.replace(/\n/g, '<br>')}
+                    </div>`;
+            }
+
+            // Then show raw records
+            if (data.raw_records && data.raw_records.length > 0) {
+                div.innerHTML += `
+                    <h2 class="text-center text-primary mb-4">
+                        ${data.raw_records.length} Matching Record${data.raw_records.length > 1 ? 's' : ''} Found
+                    </h2>`;
+
+                data.raw_records.forEach(p => {
+                    div.innerHTML += `
+                        <div class="card">
+                            <div style="float:right; color:#28a745; font-weight:bold;">
+                                ${p.area}
+                            </div>
+                            <h5>Survey No: ${p.survey}</h5>
+                            <p><b>Owner:</b> ${p.owner}</p>
+                            <p><b>Village:</b> ${p.village}</p>
+                            <p><b>Type:</b> ${p.type || 'N/A'}</p>
+                            <small class="text-muted">Tax: ₹${parseFloat(p.tax || 0).toLocaleString()}</small>
+                        </div>`;
+                });
+            } else {
+                div.innerHTML += `<p class="text-center text-muted">No exact records found, but here's what I understood.</p>`;
+            }
+
+            div.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').innerHTML = `<div class="alert alert-danger">Error. Check console.</div>`;
+            console.error(err);
+        }
+    }
+
+    // Auto-search after typing
+    let timeout;
+    document.getElementById('searchBox').addEventListener('input', function(e) {
+        clearTimeout(timeout);
+        if (e.target.value.length > 2) {
+            timeout = setTimeout(searchNow, 800);
+        }
+    });
+</script>
+
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
